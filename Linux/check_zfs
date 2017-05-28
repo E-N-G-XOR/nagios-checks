@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Argument = -P pool
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+OPTIONS:
+   -h      Show this message
+   -P      Pool Name Example: -P tank
+EOF
+}
+
+SERVER=
+VERBOSE=
+while getopts .ht:P:v. OPTION
+do
+     case $OPTION in
+         h)
+             usage
+             exit 1
+             ;;
+         P)
+             POOL=$OPTARG
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+
+if [[ -z $POOL ]]
+then
+     usage
+     exit 1
+fi
+
+STATUS="$(/sbin/zpool status -v "$POOL" | grep 'state:' | awk '{print $2}')"
+
+if [[ "$STATUS" == "ONLINE" ]]
+then
+        echo "OK - zpool $POOL is ONLINE"
+        exit 0
+fi
+
+if [[ "$STATUS" == "DEGRADED" ]]
+then
+        echo "WARNING - zpool $POOL is DEGRADED"
+        exit 1
+fi
+
+echo "CRITICAL - zpool $POOL is $STATUS"
+exit 2
